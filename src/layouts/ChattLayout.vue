@@ -1,6 +1,6 @@
 <template>
     <div class="flex">
-        <div class="flex h-screen w-16 flex-col justify-between border-e bg-white transition-all duration-75"
+        <div class="flex fixed z-30 h-screen w-16 flex-col justify-between border-e bg-white transition"
             v-show="isMiniSidebar">
             <div>
                 <div class="inline-flex size-16 items-center justify-center">
@@ -50,7 +50,7 @@
             </div>
         </div>
 
-        <div class="flex h-screen w-[220px] flex-col justify-between border-e bg-white transition-all duration-75"
+        <div class="flex z-30 fixed h-screen w-[220px] flex-col justify-between border-e bg-white transition-all duration-75"
             v-show="!isMiniSidebar">
             <div class="px-4 py-6">
                 <div class="w-[120px] h-[120px] overflow-hidden flex justify-center items-center">
@@ -88,7 +88,7 @@
                 </a>
             </div>
         </div>
-        <div class="w-full">
+        <div :class="[isMiniSidebar ? 'ml-16' : 'ml-[220px]', 'w-full']">
             <header class="bg-white w-full">
                 <div class="mx-auto">
                     <div class="flex h-16 items-center justify-end">
@@ -151,11 +151,13 @@
                 <router-view></router-view>
             </div>
         </div>
+        <Toaster />
     </div>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { Toaster } from '@steveyuowo/vue-hot-toast';
 
 const isMiniSidebar = ref(true);
 const showProfileDropdown = ref(false)

@@ -6,23 +6,25 @@
                 @click="onClose"></span>
             <div class="p-8 text-center sm:p-12">
                 <p class="text-sm font-semibold uppercase tracking-widest text-pink-500 my-4">
-                    Your order is on the way
+                    {{ props.title }}
                 </p>
 
-                <video src="https://videos.pexels.com/video-files/8471681/8471681-uhd_2732_1440_25fps.mp4"
-                    controls></video>
+                <video :src="props.source" class="w-full h-full" controls></video>
             </div>
         </section>
     </div>
 </template>
 <script lang="ts" setup>
 interface PopupInterface {
-    isShow: boolean
+    isShow: boolean,
+    source?: string,
+    title?: string
 }
 
 const emmit = defineEmits(['onClose'])
 const props = withDefaults(defineProps<PopupInterface>(), {
-    isShow: false
+    isShow: false,
+    source: 'https://videos.pexels.com/video-files/8471681/8471681-uhd_2732_1440_25fps.mp4'
 })
 
 const onClose = () => {

@@ -29,40 +29,41 @@
     </section>
     <section class="my-8">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-8">
-        <div class="h-[200px] rounded-lg bg-white cursor-pointer overflow-hidden relative group"
+        <SkeletonComponent v-for="item in [1, 2, 3, 4]" :key="item" v-if="pagination.loading" />
+        <div class="h-[200px] rounded-lg bg-white cursor-pointer overflow-hidden relative group" v-else
           v-for="video in videoData">
-          <img :src="video.thumbnail"
-            class="w-full h-full object-cover transition-all duration-100 group-hover:scale-150" alt="">
-          <div
-            class="bg-[#00000038] absolute top-0 left-0 right-0 bottom-0 flex justify-end items-start flex-col px-4 py-8">
-            <div class="hidden gap-4 my-4 group-hover:flex transition-all duration-100">
-              <span class="pi pi-pencil text-blue-900"></span>
-              <span class="pi pi-play-circle text-pink-500" @click="watchVideo" :key="video.thumbnail"></span>
-              <span class="pi pi-trash text-red-900"></span>
-            </div>
-            <h1 class="text-slate-100 font-bold text-[18px] group-hover:text-[20px] transition-all duration-100">{{
-              video.title }}</h1>
-            <span
-              class="text-slate-200 text-[12px] tracking-[1px] group-hover:text-[14px]  transition-all duration-100">{{
-                video.description
-              }}</span>
-          </div>
+          <VideoComponent :title="video.title" :thumbnail="video.thumbnail" :description="video.description"
+            @onShowVideo="watchVideo(video)" />
         </div>
       </div>
     </section>
-    <PopupComponent :isShow="showVideo" @onClose="onClose" />
+    <PopupComponent :isShow="showVideo" @onClose="onClose" :title="sourceTitle" :source="sourceVideo" />
   </div>
 </template>
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { onMounted, ref, toRefs } from 'vue';
 
 import ButtonPrimaryComponent from '@/components/ButtonPrimaryComponent.vue';
+import SkeletonComponent from '@/components/SkeletonComponent.vue'
 import PopupComponent from '@/components/PopupComponent.vue'
+import doRequest, { baseURL } from '@/helpers/doRequest';
+import { toast } from '@steveyuowo/vue-hot-toast';
+import { ErrorResponse } from '@/helpers/ErrorResponse';
+import type { IPagination } from '@/interface/paginate';
+import VideoComponent from '@/components/VideoComponent.vue';
+import { SuccessResponse } from '@/helpers/SuccessResponse';
 
 
 const showVideo = ref<boolean>(false)
+const sourceVideo = ref<string>('')
+const sourceTitle = ref<string>('')
+const videoData = ref<VideoInterface[]>()
 
-const watchVideo = () => {
+let dataVideo: VideoInterface[] = []
+
+const watchVideo = (row: any) => {
+  sourceVideo.value = baseURL + '/' + row.source as string
+  sourceTitle.value = row.title as string
   showVideo.value = true
 }
 
@@ -73,32 +74,59 @@ const onClose = () => {
 interface VideoInterface {
   thumbnail?: string,
   title?: string,
-  description?: string
+  description?: string,
+  source?: string
 }
 
+const pagination = ref<IPagination>({
+  page: 1,
+  limit: 12,
+  total: 0,
+  search: null,
+  loading: false,
+  totalPage: 0
+})
 
-const videoData = ref<VideoInterface[]>([
-  {
-    thumbnail: "/public/assets/thumbnail/1.jpeg",
-    title: "Makanan yang teratur",
-    description: "Selalu memakan makan yang sehat dan bergizi agar baik untuk bayi"
-  },
-  {
-    thumbnail: "/public/assets/thumbnail/2.jpg",
-    title: "Makanan yang teratur",
-    description: "Selalu memakan makan yang sehat dan bergizi agar baik untuk bayi"
-  },
-  {
-    thumbnail: "/public/assets/thumbnail/3.jpg",
-    title: "Makanan yang teratur",
-    description: "Selalu memakan makan yang sehat dan bergizi agar baik untuk bayi"
-  },
-  {
-    thumbnail: "/public/assets/thumbnail/4.jpg",
-    title: "Makanan yang teratur",
-    description: "Selalu memakan makan yang sehat dan bergizi agar baik untuk bayi"
+
+const getData = async () => {
+  pagination.value.loading = true
+  try {
+    const response = await doRequest({
+      url: "/video",
+      method: 'get',
+      params: {
+        page: pagination.value.page,
+        limit: pagination.value.limit,
+      }
+    })
+    const data = SuccessResponse.toPaginate<VideoInterface[]>(response.data)
+    data.data.map((item: any) => dataVideo.push(item))
+    videoData.value = dataVideo
+    pagination.value.loading = false
+    pagination.value.totalPage = Math.ceil(data.total / data.limit)
+  } catch (error) {
+    pagination.value.loading = false
+    toast.error(ErrorResponse.message(error))
   }
-])
+}
+
+const getNextUser = () => {
+  window.onscroll = () => {
+    let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
+    console.log(document.documentElement.offsetHeight)
+    if (bottomOfWindow) {
+      if (pagination.value.page != pagination.value.totalPage) {
+        pagination.value.page = pagination.value.page + 1
+        getData()
+      }
+    }
+  }
+}
+
+onMounted(async () => {
+  await getData()
+  getNextUser()
+})
 </script>
 <style lang="">
 

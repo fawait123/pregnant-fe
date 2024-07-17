@@ -1,56 +1,145 @@
 <template>
-  <section class="bg-white">
-    <div class="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-      <div class="sm:flex sm:items-center sm:justify-between">
-        <div class="text-center sm:text-left">
-          <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Welcome Back, Barry!</h1>
-
-          <p class="mt-1.5 text-sm text-gray-500">Let's write a new blog post! 🎉</p>
+  <div class="flex flex-col gap-8">
+    <HeaderComponent :with-primary-button="true" title="Tambah User" route-name="users-create"
+      :with-back-button="false" />
+    <TableComponent :columns="tableColumn" :rows="tableRow" :total="pagination.total" :perPage="pagination.page"
+      :loading="pagination.loading" v-model="pagination.search" @onPrev="onPrev" @onNext="onNext"
+      :limit="pagination.limit" @onLimit="onLimit">
+      <template #name="{ row }">{{ row.name }}</template>
+      <template #username="{ row }">{{ row.username }}</template>
+      <template #email="{ row }">{{ row.email }}</template>
+      <template #role="{ row }"><span
+          class="whitespace-nowrap rounded-full bg-blue-100 px-2.5 py-0.5 text-sm text-blue-700">{{ row.role }}
+        </span></template>
+      <template #status="{ row }">
+        <SwitchComponent :id="row._id"
+          :class-name="row.role == 'superadmin' ? 'has-[:checked]:bg-slate-500 cursor-default' : ''"
+          :checked="row.status" @onClick="changeStatus(row._id, row.status)" :disabled="row.role == 'superadmin'" />
+      </template>
+      <template #action="{ row }">
+        <div class="flex items-center gap-8 cursor-pointer" v-if="row.role != 'superadmin'">
+          <span class="pi pi-pencil text-blue-500" @click="onChange(row._id)"></span>
+          <span class="pi pi-trash text-red-500"></span>
         </div>
-
-        <div class="mt-4 flex flex-col gap-4 sm:mt-0 sm:flex-row sm:items-center">
-          <button
-            class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-5 py-3 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring"
-            type="button">
-            <span class="text-sm font-medium"> View Website </span>
-
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </button>
-
-          <ButtonPrimaryComponent title="Tambah User" />
-        </div>
-      </div>
-    </div>
-  </section>
+        <span v-else class="whitespace-nowrap rounded-full bg-red-100 px-2.5 py-0.5 text-sm text-red-700">-</span>
+      </template>
+    </TableComponent>
+  </div>
 </template>
 <script lang="ts" setup>
-import { ref } from 'vue';
-
+import { computed, ref, watch, watchEffect } from 'vue';
+import TableComponent from '@/components/TableComponent.vue'
 import ButtonPrimaryComponent from '@/components/ButtonPrimaryComponent.vue';
+import { toast } from '@steveyuowo/vue-hot-toast';
+import { ErrorResponse } from '@/helpers/ErrorResponse';
+import doRequest from '@/helpers/doRequest';
+import { SuccessResponse } from '@/helpers/SuccessResponse';
+import type { IUser } from '@/interface/user';
+import type { IColumn } from '@/interface/table';
+import SwitchComponent from '@/components/SwitchComponent.vue'
+import type { IPagination } from '@/interface/paginate';
+import { useRouter } from 'vue-router';
+import HeaderComponent from '@/components/HeaderComponent.vue';
 
-interface CardInterface {
-  title?: string,
-  amount?: number
-}
 
-const cardData = ref<CardInterface[]>([
+const router = useRouter()
+const tableRow = ref<IUser[]>([])
+const tableColumn = ref<IColumn[]>([
   {
-    title: "Total Pengguna",
-    amount: 20
+    key: "name",
+    value: "Nama"
   },
   {
-    title: "Total Foto",
-    amount: 100
+    key: "username",
+    value: "Username"
   },
   {
-    title: "Total Video",
-    amount: 50
+    key: "email",
+    value: "Email"
+  },
+  {
+    key: "role",
+    value: "Role"
+  },
+  {
+    key: "status",
+    value: "Status"
+  },
+  {
+    key: "action",
+    value: "Aksi"
   }
 ])
+const pagination = ref<IPagination>({
+  page: 1,
+  limit: 10,
+  total: 0,
+  search: null,
+  loading: false
+})
+
+
+const onChange = (id: string) => [
+  router.push({ name: 'users-create', query: { id, edit: 'true' } })
+]
+
+const getData = async () => {
+  pagination.value.loading = true
+  try {
+    const response = await doRequest({
+      url: "/user",
+      method: "get",
+      params: {
+        page: pagination.value.page,
+        limit: pagination.value.limit,
+        search: pagination.value.search
+      }
+    })
+    const data = SuccessResponse.toPaginate<IUser[]>(response.data)
+    tableRow.value = data.data
+    pagination.value.page = data.page
+    pagination.value.limit = data.limit
+    pagination.value.total = data.total
+    pagination.value.loading = false
+  } catch (error) {
+    pagination.value.loading = false
+    toast.error(ErrorResponse.message(error))
+  }
+}
+
+watch(() => {
+  getData()
+}, () => pagination)
+
+
+const changeStatus = async (id: string, status: boolean) => {
+  try {
+    await doRequest({
+      url: "/user/change-status/" + id,
+      method: 'post',
+      data: {
+        status: !status
+      }
+    })
+
+    toast.success('Data status berhasil di update')
+    getData()
+  } catch (error) {
+    toast.error(ErrorResponse.message(error))
+  }
+}
+
+const onPrev = () => {
+  pagination.value.page = pagination.value.page - 1
+}
+
+const onNext = () => {
+  pagination.value.page = pagination.value.page + 1
+}
+
+const onLimit = (limit: number) => {
+  pagination.value.limit = limit
+}
 </script>
 <style lang="">
 
