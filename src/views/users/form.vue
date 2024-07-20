@@ -60,7 +60,7 @@ import { SuccessResponse } from '@/helpers/SuccessResponse';
 import type { IUser } from '@/interface/user';
 import { toast } from '@steveyuowo/vue-hot-toast';
 import useVuelidate from '@vuelidate/core';
-import { email, required } from '@vuelidate/validators';
+import { email, required, requiredIf } from '@vuelidate/validators';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -89,7 +89,6 @@ onMounted(async () => {
     }
 })
 
-console.log(query.value)
 const state = reactive({
     username: '',
     name: '',
@@ -97,12 +96,16 @@ const state = reactive({
     password: '',
     role: '',
 })
-const rules = {
-    username: { required }, // Matches state.firstName
-    password: { required: query.value.edit ? false : true }, // Matches state.lastName
+let rules = {
+    username: { required },
+    password: { required },
     name: { required },
     email: { required, email },
     role: { required },
+}
+
+if (query.value.edit) {
+    rules.password = {}
 }
 
 const v$ = useVuelidate(rules, state)

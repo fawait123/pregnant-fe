@@ -26,6 +26,11 @@ doRequest.interceptors.response.use(function (response) {
     // Do something with response data
     return response;
 }, function (error) {
+    if (error.response && error.response.status == 401) {
+        Cookie.remove('token')
+        Cookie.remove('user')
+        window.location.href = "/login"
+    }
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
     return Promise.reject(error);
