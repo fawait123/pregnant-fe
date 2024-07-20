@@ -190,6 +190,11 @@ const sidbarMenu = ref<sidebarMenuInterface[]>([
         routeName: "/users"
     },
     {
+        title: "Pertanyaan",
+        iconName: "pi pi-list-check",
+        routeName: "/question"
+    },
+    {
         title: "Video",
         iconName: "pi pi-video",
         routeName: "/video"

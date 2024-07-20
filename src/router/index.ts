@@ -52,6 +52,25 @@ const router = createRouter({
       component: () => import('../layouts/ChattLayout.vue'),
       children: [
         {
+          name: "question",
+          path: "question",
+          component: () => import("../views/question/index.vue")
+        },
+        {
+          name: "question-create",
+          path: "question/create",
+          component: () => import("../views/question/form.vue")
+        }
+      ]
+    },
+    {
+      path: '/',
+      // route level code-splitting
+      // this generates a separate chunk (About.[hash].js) for this route
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../layouts/ChattLayout.vue'),
+      children: [
+        {
           name: "video",
           path: "video",
           component: () => import("../views/video/index.vue")

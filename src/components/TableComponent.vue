@@ -21,13 +21,17 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="border-b border-dashed last:border-b-0"
+                                    <tr class="border-b border-dashed last:border-b-0" v-if="props.rows.length > 0"
                                         v-for="(row, index) in props.rows" :key="index">
                                         <td v-show="props.withNumber">{{ (props.perPage - 1) * props.limit + (index + 1)
                                             }} .</td>
                                         <td class="p-3 pl-0" v-for="column in props.columns">
                                             <slot :name="column.key" :row="row"></slot>
                                         </td>
+                                    </tr>
+                                    <tr v-else>
+                                        <td :colspan="props.columns.length" class="text-center">Tidak ada data untuk
+                                            ditampilkan</td>
                                     </tr>
                                 </tbody>
                             </table>
